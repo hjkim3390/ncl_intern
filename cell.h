@@ -1,73 +1,58 @@
+#pragma once
 #include <iostream>
+#include <vector>
+#include <map>
+#include "Vector3f.h"
 
 using namespace std;
 
-class Cell{
-    private:
-    double vrest; //mV
-    double vth; //mV
+class Cell {
+private:
+    int gid;
+    string type;
 
-    double cm; //nF
-    double gl; //uS
+    double vrest; // mV
+    double vth; // mV
 
-    double gex; //uS
-    double eex; //mV
-    double ginh; //uS
-    double einh; //mV
+    double cm; // nF
+    double gl; // uS
+    double tau; // ms
+    double Eex; // mV
+    double gex; // uS
+    double tauex; // ms
+    double Einh; // mV
+    double ginh; // uS
+    double tauinh; //ms
+
+    double refractory_period; // ms
+
+    vector<double> spike_timing;
+    int spike_cnt;
+    vector<double> voltage_trace;
 
     double ib; // nA
 
-    public: 
-    bool initialized;
+    Vector3f pos;
 
+public:
+    bool ongoing;
+    bool spiking_ongoing;
+    bool spiked;
     double dt;
     double t; // ms
-
     double vm; // mV
-    bool activated;
+    map<Cell*, double> exc_conns;
+    map<Cell*, double> inh_conns;
 
+    Cell(int num_cell, int gid, Vector3f pos);
 
-    Cell(double vrest=-60, double vth=-50, double ib=0.3){
-        cout << "cell initialized" << endl;
-        this->vrest = vrest;
-        this->vth = vth;
+    bool operator<(const Cell& cell) const;
 
-        this->cm = 0.2;
-        this->gl = 0.01;
+    void set_pos(Vector3f newpos);
 
-        // gex
-        // eex
-        // ginh
-        // einh
+    void step(); // steps derivative function for membrane potential
+    void spike(); // spikes when vm > -50, add info into spike_timing
+    void control_gs(); // step synaptic conductances. this function is inside void step().
 
-        this->ib = ib;
-
-        this->initialized = false;
-        this->dt = 0.1;
-        this->t = 0;
-    }
-
-    void initialize(double vm){
-        this->vm = vm;
-        this->initialized = true;
-    }
-
-    void step(){
-        if(!initialized){
-            cout << "not initialized Cell.initialize() needed" << endl;
-        }
-
-        double _il = gl * (vrest - vm); // 1) leak current
-        double _ib = ib; // 2) bias current 
-
-        double i = _il + _ib;
-
-        vm += i / cm * dt;
-
-        if(vm > vth){
-            activated = true;
-            cout << "activated" << endl;
-            vm = vrest;
-        }
-    }
+    double get_gex() { return gex; }
 };

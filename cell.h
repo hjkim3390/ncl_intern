@@ -54,5 +54,7 @@ public:
     void spike(); // spikes when vm > -50, add info into spike_timing
     void control_gs(); // step synaptic conductances. this function is inside void step().
 
+    void make_conns();
+
     double get_gex() { return gex; }
 };

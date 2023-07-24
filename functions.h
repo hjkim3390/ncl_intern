@@ -27,16 +27,27 @@ vector<Vector3f> generate_torus_positions(int num_neurons, double total_radius, 
 }
 
 vector<int> generate_sender_gid(vector<Vector3f> positions) {
+    vector<int> ans;
     int num_cell = size(positions);
     int cell_num = num_cell * 926 / 20000;
+
+    return ans;
 }
 
 vector<int> generate_receiver_exc_gid(vector<Vector3f> positions) {
+    vector<int> ans;
+
     int num_cell = size(positions);
     int cell_num = num_cell * 463 / 20000;
+    return ans;
+
 }
 
 vector<int> generate_receiver_inh_gid(vector<Vector3f> positions) {
+    vector<int> ans;
+
     int num_cell = size(positions);
     int cell_num = num_cell * 73 / 20000;
+    return ans;
+
 }

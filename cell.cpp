@@ -14,6 +14,7 @@ Cell::Cell(int num_cell, int gid, Vector3f pos) {
 
     this->vrest = -60;
     this->vth = -50;
+    this->vaction = 20;
 
     this->cm = 0.2;
     this->gl = 0.01;
@@ -71,6 +72,10 @@ void Cell::step()
                 spiked= false;
             }
 
+            if (t - spike_timing[spike_cnt-1] >= 1 && vm > vth) {
+                vm = vrest;
+            }
+
             if (t - spike_timing[spike_cnt-1] >= refractory_period) {
                 spiking_ongoing = false;
             }
@@ -83,7 +88,7 @@ void Cell::step()
 void Cell::spike()
 {
     if ((this->vm > vth) && (spiking_ongoing == false)) {
-        this->vm = vrest;
+        this->vm = vaction;
         spiking_ongoing = true;
         spiked = true;
         spike_cnt += 1;
@@ -123,5 +128,12 @@ void Cell::control_gs()
 
     if (no_pre_inh_input) {
         ginh -= (1 / tauinh) * ginh * dt;
+    }
+    
+}
+
+void Cell::spike_force(){
+    if(spiking_ongoing != true){ // not refractory
+        vm = vaction;
     }
 }

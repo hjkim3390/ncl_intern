@@ -13,6 +13,7 @@ private:
 
     double vrest; // mV
     double vth; // mV
+    double vaction;
 
     double cm; // nF
     double gl; // uS
@@ -25,10 +26,6 @@ private:
     double tauinh; //ms
 
     double refractory_period; // ms
-
-    vector<double> spike_timing;
-    int spike_cnt;
-    vector<double> voltage_trace;
 
     double ib; // nA
 
@@ -44,6 +41,10 @@ public:
     map<Cell*, double> exc_conns;
     map<Cell*, double> inh_conns;
 
+    vector<double> spike_timing;
+    int spike_cnt;
+    vector<double> voltage_trace;
+
     Cell(int num_cell, int gid, Vector3f pos);
 
     bool operator<(const Cell& cell) const;
@@ -57,4 +58,7 @@ public:
     void make_conns();
 
     double get_gex() { return gex; }
+
+    // spike force : external poisson input 
+    void spike_force();
 };

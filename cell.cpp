@@ -1,5 +1,9 @@
 #include "cell.h"
 
+random_device rd_n; 
+mt19937 gen_n(rd_n());
+normal_distribution<double> d(0.0, 1.0);
+
 Cell::Cell(int num_cell, int gid, Vector3f pos) {
     this->gid = gid;
     if (gid < num_cell * 3 / 4) {
@@ -23,11 +27,11 @@ Cell::Cell(int num_cell, int gid, Vector3f pos) {
     this->Einh = -80;
     this->tauex = 5;
     this->tauinh = 10;
-    this->gex = 0;
-    this->ginh = 0;
+    this->gex = 0.0; // modification // 0 normal
+    this->ginh = 0.0; // modification // 0 normal
 
     this->refractory_period = 5;
-    this->ib = 0.25;
+    this->ib = 0.03;
 
     this->t = 0;
     this->dt = 0.1;
@@ -62,7 +66,7 @@ void Cell::step()
         //cout << "spiking " << spiking_ongoing << endl;
         //cout << "gex " << gex << endl;
         if (!spiking_ongoing) {
-            vm += (1 / cm) * (gl * (vrest - vm) + gex * (Eex - vm) + ginh * (Einh - vm) + ib) * dt;
+            vm += (1 / cm) * (gl * (vrest - vm) + gex * (Eex - vm) + ginh * (Einh - vm) + ib ) * dt;
             spike();
         }
 
@@ -70,9 +74,6 @@ void Cell::step()
             // cell is spiking ...
             if (spike_timing[spike_cnt-1] != t) {
                 spiked= false;
-            }
-
-            if (t - spike_timing[spike_cnt-1] >= 1 && vm > vth) {
                 vm = vrest;
             }
 
@@ -134,6 +135,6 @@ void Cell::control_gs()
 
 void Cell::spike_force(){
     if(spiking_ongoing != true){ // not refractory
-        vm = 20;
+        vm = vaction;
     }
 }

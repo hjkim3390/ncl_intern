@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <random>
 #include "Vector3f.h"
 
 using namespace std;
@@ -54,6 +55,8 @@ public:
     void step(); // steps derivative function for membrane potential
     void spike(); // spikes when vm > -50, add info into spike_timing
     void control_gs(); // step synaptic conductances. this function is inside void step().
+
+    void make_conns();
 
     double get_gex() { return gex; }
 

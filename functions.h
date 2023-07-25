@@ -6,6 +6,8 @@
 #include <vector>
 #include <math.h>
 #include <random>
+#include <utility>
+#include <algorithm>
 #include "Vector3f.h"
 
 using namespace std;
@@ -27,11 +29,117 @@ vector<Vector3f> generate_torus_positions(int num_neurons, double total_radius, 
     return positions;
 }
 
-vector<int> generate_sender_gid(vector<Vector3f> positions) {
+vector<pair<int, int> > generate_exc_connlist(int num_cell) {
+    vector<pair<int, int> > ans;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+
+    for (int i = 0; i < num_cell; i++) {
+        if (i < num_cell * 3 / 4) { // this is excitatory cell
+            for (int j = 0; j < num_cell; j++) {
+                if (j != i) { // don't connect with myself
+                    double random_number = uniform_dist(gen); // lets make connection!
+                    if (random_number < 0.02) {
+                        ans.push_back(make_pair(i, j));
+                    }
+                }
+                
+            }
+            
+        }
+    }
+    return ans;
+}
+
+vector<pair<int, int> > generate_gl_inh_connlist(int num_cell) {
+    vector<pair<int, int> > ans;
+
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+
+    for (int i = 0; i < num_cell; i++) {
+        if (num_cell * 3 / 4 <= i < num_cell * 3 / 4 + (num_cell / 4) * 0.65) { // this is global inhibitory cell
+            for (int j = 0; j < num_cell; j++) {
+                if (j != i) { // don't connect with myself
+                    double random_number = uniform_dist(gen); // lets make connection!
+                    if (random_number < 0.02) {
+                        ans.push_back(make_pair(i, j));
+                    }
+                }
+            }
+        }
+    }
+    return ans;
+}
+
+
+vector<vector<double> > make_distance_map(vector<Vector3f>& positions) {
+    const int num_cell = positions.size();
+    vector<vector<double> > ans(num_cell, vector<double>(num_cell, 0.0));
+
+    for (int i = 0; i < num_cell; i++) {
+        for (int j = i + 1; j < num_cell; j++) {
+            ans[i][j] = ans[j][i] = positions[i].dist(positions[j]);
+        }
+    }
+    return ans;
+}
+
+struct VectorWithGid {
+    double value;
+    int gid;
+};
+
+bool compare_by_value(const VectorWithGid& a, const VectorWithGid& b) {
+    return a.value < b.value;
+}
+
+vector<pair<int, int> > generate_loc_inh_connlist(int num_cell, const vector<vector<double> > distance_map) {
+    vector<pair<int, int> > ans;
+    int boundary = num_cell * 500 / 20000;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+
+    for (int i = 0; i < num_cell; i++) {
+        if ((num_cell * 3 / 4 + (num_cell / 4) * 0.65) <= i) { // this is local inhibitory cell
+            std::vector<VectorWithGid> pos_with_gid(num_cell);
+            
+            for (int j = 0; j < num_cell; ++j) {
+                pos_with_gid[j].value = distance_map[i][j];
+                pos_with_gid[j].gid = j;
+            }
+            std::sort(pos_with_gid.begin(), pos_with_gid.end(), compare_by_value);
+
+            for (int j = 0; j < boundary; ++j){
+                double random_number = uniform_dist(gen); // lets make connection!
+                if (random_number < 5) {
+                    ans.push_back(make_pair(i, pos_with_gid[j].gid));
+                }
+           }
+
+        }
+    }
+    return ans;
+}
+
+vector<int> generate_sender_gid(vector<Vector3f> positions, vector<vector<double> > distance_map) {
     vector<int> ans;
     int num_cell = positions.size();
-    int cell_num = num_cell * 926 / 20000;
+    int boundary = num_cell * 926 / 20000;
+    std::vector<VectorWithGid> pos_with_gid(num_cell);
+    
+    for (int i = 0; i < num_cell; i++) {
+            pos_with_gid[i].value = distance_map[0][i];
+            pos_with_gid[i].gid = i;
+    }
 
+    std::sort(pos_with_gid.begin(), pos_with_gid.end(), compare_by_value);
+    for (int i = 0; i < boundary; ++i) {
+            ans.push_back(pos_with_gid[i].gid);
+    }   
     return ans;
 }
 
@@ -58,6 +166,14 @@ random_device rd;  // Will be used to obtain a seed for the random number engine
 mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 uniform_real_distribution<> dis(0.0, 1.0);
 
+/* use this code when you want to apply poisson input
+// if (poisson_input.front() <= postcell->t) {
+        //     cout << poisson_input.front() << endl;
+        //     poisson_input.erase(poisson_input.begin());
+        //     // spike sender neuron 
+        //     precell->spike_force();
+        // }
+*/
 vector<double> generate_poisson_input(double dt = 0.1, double tmax = 650.0, double max_rate = 140.0/1000, double f_osc = 10.0/1000){
     vector<double> spike_time;
 
@@ -92,4 +208,25 @@ void export2csv_singlecell(string filename, Cell cell, string option="spike_timi
     for(int i=0;i<recording_vec.size();i++){
         myfile << recording_vec.at(i) << endl;
     }
+}
+
+void export2csv_multiple_voltage(string filename, vector<Cell*> cell_list){
+
+    int cell_num = cell_list.size();
+    int t_size = cell_list[0]->voltage_trace.size();
+
+    ofstream myfile;
+    myfile.open(filename);
+    for(int gid=0;gid<cell_num;gid++){
+        myfile << ",cell_" << gid;
+    }
+    myfile << endl;
+
+    for(int t=0;t<t_size;t++){
+        for(int gid=0;gid<cell_num;gid++){
+            myfile << "," << cell_list[gid]->voltage_trace.at(t);
+        }
+        myfile << endl;
+    }
+    myfile.close();
 }

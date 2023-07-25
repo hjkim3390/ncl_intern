@@ -14,7 +14,7 @@ public:
 	Vector3f operator*(const float s);
 	float operator*(const Vector3f& v);
 	Vector3f operator/(const float s);
-	float dist(const Vector3f& v);
+	double dist(const Vector3f& v);
 
 private:
 	float pos[3];

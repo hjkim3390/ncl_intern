@@ -15,7 +15,7 @@ int num_loc_inh = (num_cell / 4) * 0.35;
 
 int total_radius = 100;
 int torus_radius = 33;
-int runtime = 1.5 * 1000; // ms
+int runtime = 650; // ms
 
 vector<Vector3f> positions = generate_torus_positions(num_cell, total_radius, torus_radius);
 vector<double> poisson_input = generate_poisson_input();
